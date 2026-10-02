@@ -1,0 +1,41 @@
+name: CI
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    name: Build, correctness test, and comparison benchmark
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install DPDK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++-13 pkg-config libdpdk-dev
+
+      - name: reserve hugepages + mount hugetlbfs
+        run: |
+          echo 64 | sudo tee /proc/sys/vm/nr_hugepages
+          sudo mkdir -p /mnt/huge
+          sudo mount -t hugetlbfs nodev /mnt/huge
+          cat /proc/sys/vm/nr_hugepages
+          mount | grep huge
+
+      - name: build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++-13
+          cmake --build build -j"$(nproc)"
+
+      - name: correctness test (real assertions, not just non-crashing)
+        run: |
+          sudo rm -rf /var/run/dpdk
+          sudo ./build/test_dpdk_primitives --no-pci --huge-dir=/mnt/huge -l 0
+
+      - name: rte_ring vs mpsc::MpscQueue comparison
+        run: |
+          sudo rm -rf /var/run/dpdk
+          sudo ./build/bench_ring_comparison --no-pci --huge-dir=/mnt/huge -l 0
