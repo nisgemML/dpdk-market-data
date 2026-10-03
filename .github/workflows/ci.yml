@@ -39,3 +39,8 @@ jobs:
         run: |
           sudo rm -rf /var/run/dpdk
           sudo ./build/bench_ring_comparison --no-pci --huge-dir=/mnt/huge -l 0
+
+      - name: real DPDK ethdev RX/TX (net_af_packet over lo)
+        run: |
+          sudo rm -rf /var/run/dpdk
+          sudo ./build/test_afpacket_rxtx --no-pci --huge-dir=/mnt/huge --vdev=net_af_packet0,iface=lo -l 0

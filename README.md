@@ -10,19 +10,23 @@ portfolio's own hand-rolled [mpsc-queue](https://github.com/nisgemML/mpsc-queue)
 **What this proves:** genuine, correct use of DPDK's core data-plane
 primitives — `rte_eal_init`, NUMA-local `rte_mempool`/`rte_mbuf`
 allocation, and `rte_ring` with verified FIFO ordering and correct
-full-ring behavior. Every claim below is backed by a test that checks an
-actual assertion, not just "didn't crash" (see `tests/test_dpdk_primitives.cpp`).
+full-ring behavior (`tests/test_dpdk_primitives.cpp`) — **and real packet
+RX/TX**: `rte_eth_tx_burst()`/`rte_eth_rx_burst()` through DPDK's actual
+ethdev API, a real Ethernet frame genuinely round-tripped through the
+`net_af_packet` PMD bound to the `lo` interface, payload verified
+byte-exact (`tests/test_afpacket_rxtx.cpp`). Every claim here is backed
+by a test that checks an actual assertion, not just "didn't crash."
 
 **What this does NOT prove, stated plainly rather than implied:**
 DPDK's actual purpose — kernel-bypass packet I/O — requires a NIC bound
 to a DMA-capable userspace driver (`uio_pci_generic`/`vfio-pci`). No such
-hardware is available in the environment this was built and tested in
-(`--no-pci` EAL mode, no physical or virtual NIC attached). **No packet
-RX/TX was attempted here at all** — not via a software PMD, not
-simulated, not claimed. This repo demonstrates the DPDK programming
-model correctly; it does not demonstrate — and does not claim — the
-actual kernel-bypass latency benefit, which fundamentally needs hardware
-this environment doesn't have. See [`LIMITATIONS.md`](LIMITATIONS.md)
+hardware is available in the environment this was built and tested in.
+`net_af_packet` is a **software** PMD — it still goes through the
+kernel's own AF_PACKET socket path internally, the same as any ordinary
+socket. The RX/TX test above proves the DPDK *programming model* works
+correctly end-to-end; it does not demonstrate — and does not claim — the
+actual zero-copy DMA benefit DPDK exists for, which fundamentally needs
+hardware this environment doesn't have. See [`LIMITATIONS.md`](LIMITATIONS.md)
 for the complete, explicit scope.
 
 ## Why this exists
@@ -79,6 +83,7 @@ directly instead.
 |---|---|
 | `include/dpdkmd/market_event.hpp` | Shared 40-byte event struct, shaped like the AddOrder events used elsewhere in this portfolio |
 | `tests/test_dpdk_primitives.cpp` | Correctness: mempool accounting, mbuf round-trip, ring FIFO order, ring-full behavior — each a real assertion |
+| `tests/test_afpacket_rxtx.cpp` | Real packet RX/TX: `rte_eth_tx_burst`/`rx_burst` over `net_af_packet` (`lo`), payload verified byte-exact |
 | `bench/bench_ring_comparison.cpp` | The `rte_ring` vs `mpsc::MpscQueue` comparison above |
 | `third_party/mpsc-queue/` | Vendored from [mpsc-queue](https://github.com/nisgemML/mpsc-queue) for the comparison — not reimplemented |
 

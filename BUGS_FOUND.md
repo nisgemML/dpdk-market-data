@@ -55,3 +55,22 @@ does. A guessed assertion that happens to be wrong is just as much a bug
 as the code it's supposed to be checking, and the fix here (write a
 10-line program and look) is the same discipline this whole portfolio
 has tried to apply at every scale, not just the dramatic ones.
+
+### 4. A harmless `ioctl` warning on every real RX/TX run — confirmed harmless, not just ignored
+**Symptom:** `tests/test_afpacket_rxtx.cpp` prints `eth_dev_macaddr_set():
+ioctl(SIOCSIFHWADDR) failed: Invalid argument` on every single run, start
+to finish, including the ones that pass cleanly.
+**Investigated, not just suppressed:** `SIOCSIFHWADDR` is the kernel
+ioctl for setting an interface's hardware (MAC) address. The loopback
+interface (`lo`) doesn't support hardware addressing the way a real
+Ethernet NIC does — there's no physical MAC to set — so `net_af_packet`'s
+attempt to assign one during port start-up fails by design, not by
+accident. The actual RX/TX path (`rte_eth_tx_burst`/`rx_burst`) doesn't
+depend on this succeeding, which is exactly what the test's own
+byte-exact payload verification confirms: the warning fires on every
+run, and every run still passes.
+**Why this is in BUGS_FOUND.md at all, if it's harmless:** a warning
+that always fires is exactly the kind of noise that's easy to either
+panic over or tune out without checking — neither is the right response.
+The right response, applied here, is confirming *why* it's harmless
+before deciding to leave it alone, not assuming either way.

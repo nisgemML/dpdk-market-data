@@ -33,3 +33,8 @@ echo ""
 echo "=== Running rte_ring vs mpsc::MpscQueue comparison ==="
 rm -rf /var/run/dpdk
 ./build/bench_ring_comparison --no-pci --huge-dir="${HUGE_DIR}" -l 0
+
+echo ""
+echo "=== Running real DPDK ethdev RX/TX (net_af_packet over lo) ==="
+rm -rf /var/run/dpdk
+./build/test_afpacket_rxtx --no-pci --huge-dir="${HUGE_DIR}" --vdev=net_af_packet0,iface=lo -l 0
