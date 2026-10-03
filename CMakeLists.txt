@@ -25,5 +25,8 @@ target_link_libraries(test_dpdk_primitives PRIVATE dpdkmd_iface)
 # ctest has no hook for that setup, so this is invoked directly by CI and
 # by run_tests.sh instead of through the ctest driver.
 
+add_executable(test_afpacket_rxtx tests/test_afpacket_rxtx.cpp)
+target_link_libraries(test_afpacket_rxtx PRIVATE dpdkmd_iface)
+
 add_executable(bench_ring_comparison bench/bench_ring_comparison.cpp)
 target_link_libraries(bench_ring_comparison PRIVATE dpdkmd_iface)
